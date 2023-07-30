@@ -30,29 +30,29 @@ fn ex2() {
 }
 
 fn get_expected_frequency(c: u8) -> f32 {
-    const FREQ_TABLE: [f32; 26] = [
-        0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, // A-F
-        0.02015, 0.06094, 0.06966, 0.00153, 0.00772, 0.04025, // G-L
-        0.02406, 0.06749, 0.07507, 0.01929, 0.00095, 0.05987, // M-R
-        0.06327, 0.09056, 0.02758, 0.00978, 0.02360, 0.00150, // S-X
-        0.01974, 0.00074, // Y-Z
-    ];
-
     let c = c.to_ascii_uppercase();
-    if c < 'A' as u8 || c > 'Z' as u8 {
-        match c as char {
-            ' ' => return 0.15,
-            '\'' => return 0.01,
-            ',' => return 0.01,
-            '.' => return 0.01,
-            '!' => return 0.01,
-            '?' => return 0.01,
-            _ => return 0.0001,
-        }
+    if c >= 'A' as u8 && c <= 'Z' as u8 {
+        const FREQ_TABLE: [f32; 26] = [
+            0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, // A-F
+            0.02015, 0.06094, 0.06966, 0.00153, 0.00772, 0.04025, // G-L
+            0.02406, 0.06749, 0.07507, 0.01929, 0.00095, 0.05987, // M-R
+            0.06327, 0.09056, 0.02758, 0.00978, 0.02360, 0.00150, // S-X
+            0.01974, 0.00074, // Y-Z
+        ];
+
+        let index = c - 'A' as u8;
+        return FREQ_TABLE[index as usize];
     }
 
-    let index = c - 'A' as u8;
-    FREQ_TABLE[index as usize]
+    return match c as char {
+        ' ' => 0.15,
+        '\'' => 0.01,
+        ',' => 0.01,
+        '.' => 0.01,
+        '!' => 0.01,
+        '?' => 0.01,
+        _ => 0.0001,
+    };
 }
 
 /// Score the text based on how closely it matches the expected frequency of letters in English.
