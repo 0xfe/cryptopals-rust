@@ -81,9 +81,7 @@ fn score_englishness(text: Vec<u8>) -> f32 {
     error_score.sqrt()
 }
 
-fn ex3() {
-    info!("Running: ex3");
-    let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+fn decrypt_single_char_xor(input: &str) -> (f32, String) {
     let decoded = hex::decode(input).unwrap();
 
     let mut scores = [0.0; 256];
@@ -101,7 +99,6 @@ fn ex3() {
         if score < min {
             min = score;
             min_char = c;
-            debug!("New min: {} ({})", min, min_char);
         }
     }
 
@@ -110,9 +107,37 @@ fn ex3() {
         result.push(a ^ min_char);
     }
 
-    let result = String::from_utf8(result).unwrap();
-    info!("Decoded: {:?}", result);
+    let result = unsafe { String::from_utf8_unchecked(result) };
+    (min, result)
+}
+
+fn ex3() {
+    info!("Running: ex3");
+    let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+    let (score, result) = decrypt_single_char_xor(input);
+
+    info!("Score: {}, Result: {:?}", score, result);
     assert_eq!(result, "Cooking MC's like a pound of bacon");
+}
+
+fn ex4() {
+    info!("Running: ex4");
+
+    let data = std::fs::read_to_string("data/4.txt").unwrap();
+    let lines = data.split("\n");
+
+    let mut min = std::f32::MAX;
+    let mut min_result = String::new();
+    for line in lines {
+        let (score, result) = decrypt_single_char_xor(line);
+        if score < min {
+            min = score;
+            min_result = result;
+        }
+    }
+
+    info!("Score: {}, Result: {:?}", min, min_result);
+    assert_eq!(min_result, "Now that the party is jumping\n");
 }
 
 fn init_logger() {
@@ -127,4 +152,5 @@ fn main() {
     ex1();
     ex2();
     ex3();
+    ex4();
 }
