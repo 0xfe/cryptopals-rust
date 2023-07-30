@@ -1,6 +1,5 @@
 use base64::{engine::general_purpose, Engine};
 use tracing::*;
-use tracing_subscriber::FmtSubscriber;
 
 fn ex1() {
     info!("Running: ex1");
@@ -140,9 +139,26 @@ fn ex4() {
     assert_eq!(min_result, "Now that the party is jumping\n");
 }
 
+fn ex5() {
+    info!("Running: ex5");
+
+    let input = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal";
+    let output = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f";
+    let key = "ICE";
+
+    let mut result = vec![];
+    for (i, c) in input.chars().enumerate() {
+        let key_char = key.chars().nth(i % key.len()).unwrap();
+        result.push(c as u8 ^ key_char as u8);
+    }
+
+    assert_eq!(hex::encode(result), output);
+}
+
 fn init_logger() {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
@@ -153,4 +169,5 @@ fn main() {
     ex2();
     ex3();
     ex4();
+    ex5();
 }
