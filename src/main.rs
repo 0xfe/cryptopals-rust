@@ -1,4 +1,5 @@
 mod set1;
+mod set2;
 mod util;
 
 fn init_logger() {
@@ -10,7 +11,9 @@ fn init_logger() {
 
 fn main() {
     init_logger();
+
     set1::run();
+    set2::run();
 
     println!("All done!")
 }

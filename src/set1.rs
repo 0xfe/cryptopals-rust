@@ -136,7 +136,7 @@ fn challenge4() {
         }
     }
 
-    info!("Score: {}, Result: {:?}", min, min_result);
+    debug!("Score: {}, Result: {:?}", min, min_result);
     assert_eq!(min_result, "Now that the party is jumping\n");
 }
 
@@ -297,6 +297,7 @@ fn challenge8() {
 }
 
 pub fn run() {
+    info!("Running Set 1");
     challenge1();
     challenge2();
     challenge3();
