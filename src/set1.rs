@@ -83,7 +83,7 @@ fn score_englishness(text: Vec<u8>) -> f32 {
     error_score.sqrt()
 }
 
-fn decrypt_single_char_xor(input: Vec<u8>) -> (f32, u8, String) {
+fn solve_single_char_xor(input: Vec<u8>) -> (f32, u8, String) {
     let mut scores = [0.0; 256];
     let mut min = std::f32::MAX;
     let mut min_char = 0;
@@ -114,7 +114,7 @@ fn decrypt_single_char_xor(input: Vec<u8>) -> (f32, u8, String) {
 fn challenge3() {
     info!("Running: challenge3");
     let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    let (score, _, result) = decrypt_single_char_xor(hex::decode(input).unwrap());
+    let (score, _, result) = solve_single_char_xor(hex::decode(input).unwrap());
 
     info!("Score: {}, Result: {:?}", score, result);
     assert_eq!(result, "Cooking MC's like a pound of bacon");
@@ -129,7 +129,7 @@ fn challenge4() {
     let mut min = std::f32::MAX;
     let mut min_result = String::new();
     for line in lines {
-        let (score, _, result) = decrypt_single_char_xor(hex::decode(line).unwrap());
+        let (score, _, result) = solve_single_char_xor(hex::decode(line).unwrap());
         if score < min {
             min = score;
             min_result = result;
@@ -206,7 +206,7 @@ fn challenge6() {
                 .map(|c| *c.get(i).unwrap_or(&0))
                 .collect::<Vec<u8>>();
 
-            let (_, key_char, _) = decrypt_single_char_xor(column);
+            let (_, key_char, _) = solve_single_char_xor(column);
             result_set.push(key_char);
         }
 
@@ -228,7 +228,15 @@ fn challenge6() {
     assert_eq!(min_key, "Terminator X: Bring the noise".to_string());
 }
 
+fn decrypt_aes128_block(block: &[u8], key: &[u8]) -> Vec<u8> {
+    let cipher = aes::Aes128::new_from_slice(key).unwrap();
+    let mut block = *GenericArray::from_slice(block);
+    cipher.decrypt_block(&mut block);
+    block.to_vec()
+}
+
 fn challenge7() {
+    info!("Running: challenge7");
     // Read data from file, remove newlines, and decode from base64.
     let data = {
         let data = std::fs::read_to_string("data/7.txt").unwrap();
@@ -237,16 +245,11 @@ fn challenge7() {
             .unwrap()
     };
 
-    let key = "YELLOW SUBMARINE";
-    let cipher = aes::Aes128::new_from_slice(key.as_bytes()).unwrap();
+    let key = "YELLOW SUBMARINE".as_bytes();
 
     let result: Vec<u8> = data
         .chunks(16)
-        .map(|chunk| {
-            let mut block = *GenericArray::from_slice(chunk);
-            cipher.decrypt_block(&mut block);
-            block.to_vec()
-        })
+        .map(|chunk| decrypt_aes128_block(chunk, key))
         .flatten()
         .collect();
 
@@ -257,6 +260,42 @@ fn challenge7() {
     assert!(result.starts_with("I'm back and I'm ringin' the bell"))
 }
 
+fn challenge8() {
+    info!("Running: challenge8");
+
+    // Read data from file, split up lines, and decode each line from hex.
+    let data = std::fs::read_to_string("data/8.txt")
+        .unwrap()
+        .lines()
+        .map(|lines| hex::decode(lines).unwrap())
+        .collect::<Vec<_>>();
+
+    // Find the line with the lowest average hamming distance between chunks.
+    let mut min_score = std::f32::MAX;
+    let mut best_line = 0;
+    for (i, line) in data.iter().enumerate() {
+        let mut score = 0.0;
+
+        // For each chunk, aggregate the hamming distance between it and every other chunk.
+        for (j, chunk) in line.chunks(16).enumerate() {
+            for (k, chunk2) in line.chunks(16).enumerate() {
+                if j == k {
+                    continue;
+                }
+
+                score += hamming(chunk, chunk2) as f32 / 16.0;
+            }
+        }
+
+        if score < min_score {
+            min_score = score;
+            best_line = i;
+        }
+    }
+
+    assert_eq!(best_line, 132);
+}
+
 pub fn run() {
     challenge1();
     challenge2();
@@ -265,4 +304,5 @@ pub fn run() {
     challenge5();
     challenge6();
     challenge7();
+    challenge8();
 }
