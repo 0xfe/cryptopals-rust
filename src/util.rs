@@ -12,6 +12,7 @@ pub fn hamming(a: &[u8], b: &[u8]) -> u32 {
 }
 
 mod test {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]

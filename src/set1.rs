@@ -1,10 +1,11 @@
+use aes::cipher::{generic_array::GenericArray, BlockDecrypt, KeyInit};
 use base64::{engine::general_purpose, Engine};
 use tracing::*;
 
-use crate::util::{self, hamming};
+use crate::util::hamming;
 
-fn ex1() {
-    info!("Running: ex1");
+fn challenge1() {
+    info!("Running: challenge1");
     let input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
     let decoded = hex::decode(input).unwrap();
     let encoded = general_purpose::STANDARD.encode(&decoded);
@@ -14,8 +15,8 @@ fn ex1() {
     );
 }
 
-fn ex2() {
-    info!("Running: ex2");
+fn challenge2() {
+    info!("Running: challenge2");
     let input = "1c0111001f010100061a024b53535009181c";
     let decoded = hex::decode(input).unwrap();
     let input2 = "686974207468652062756c6c277320657965";
@@ -110,8 +111,8 @@ fn decrypt_single_char_xor(input: Vec<u8>) -> (f32, u8, String) {
     (min, min_char, result)
 }
 
-fn ex3() {
-    info!("Running: ex3");
+fn challenge3() {
+    info!("Running: challenge3");
     let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
     let (score, _, result) = decrypt_single_char_xor(hex::decode(input).unwrap());
 
@@ -119,8 +120,8 @@ fn ex3() {
     assert_eq!(result, "Cooking MC's like a pound of bacon");
 }
 
-fn ex4() {
-    info!("Running: ex4");
+fn challenge4() {
+    info!("Running: challenge4");
 
     let data = std::fs::read_to_string("data/4.txt").unwrap();
     let lines = data.split("\n");
@@ -149,8 +150,8 @@ fn crypt_xor(input: &str, key: &str) -> Vec<u8> {
     result
 }
 
-fn ex5() {
-    info!("Running: ex5");
+fn challenge5() {
+    info!("Running: challenge5");
 
     let input = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal";
     let output = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f";
@@ -161,8 +162,8 @@ fn ex5() {
     assert_eq!(hex::encode(result), output);
 }
 
-fn ex6() {
-    info!("Running: ex6");
+fn challenge6() {
+    info!("Running: challenge6");
 
     // Read data from file, remove newlines, and decode from base64
     let data = std::fs::read_to_string("data/6.txt")
@@ -175,19 +176,17 @@ fn ex6() {
 
     let mut keysize_distances = vec![];
 
-    // For each keysize, take the first two blocks and compute the hamming distance between them.
+    // For each keysize, take the first four chunks of that size and compute the average
+    // hamming distance between them.
     for keysize in 2..40 {
         let first = data.chunks(keysize).nth(0).unwrap();
         let second = data.chunks(keysize).nth(1).unwrap();
         let third = data.chunks(keysize).nth(2).unwrap();
         let fourth = data.chunks(keysize).nth(3).unwrap();
-        let fifth = data.chunks(keysize).nth(4).unwrap();
-        let sixth = data.chunks(keysize).nth(5).unwrap();
 
         let distance1 = hamming(first, second) as f32 / keysize as f32;
         let distance2 = hamming(third, fourth) as f32 / keysize as f32;
-        let distance3 = hamming(fifth, sixth) as f32 / keysize as f32;
-        keysize_distances.push((keysize, (distance1 + distance2 + distance3) / 3.0));
+        keysize_distances.push((keysize, (distance1 + distance2) / 2.0));
     }
 
     // Sort the keysizes by distance (smallest to largest)
@@ -229,11 +228,41 @@ fn ex6() {
     assert_eq!(min_key, "Terminator X: Bring the noise".to_string());
 }
 
+fn challenge7() {
+    // Read data from file, remove newlines, and decode from base64.
+    let data = {
+        let data = std::fs::read_to_string("data/7.txt").unwrap();
+        general_purpose::STANDARD
+            .decode(&data.replace("\n", ""))
+            .unwrap()
+    };
+
+    let key = "YELLOW SUBMARINE";
+    let cipher = aes::Aes128::new_from_slice(key.as_bytes()).unwrap();
+
+    let result: Vec<u8> = data
+        .chunks(16)
+        .map(|chunk| {
+            let mut block = *GenericArray::from_slice(chunk);
+            cipher.decrypt_block(&mut block);
+            block.to_vec()
+        })
+        .flatten()
+        .collect();
+
+    let result = String::from_utf8(result).unwrap();
+
+    debug!("Decrypted:\n{}", result);
+
+    assert!(result.starts_with("I'm back and I'm ringin' the bell"))
+}
+
 pub fn run() {
-    ex1();
-    ex2();
-    ex3();
-    ex4();
-    ex5();
-    ex6();
+    challenge1();
+    challenge2();
+    challenge3();
+    challenge4();
+    challenge5();
+    challenge6();
+    challenge7();
 }
