@@ -1,8 +1,7 @@
-use aes::cipher::{generic_array::GenericArray, BlockDecrypt, KeyInit};
 use base64::{engine::general_purpose, Engine};
 use tracing::*;
 
-use crate::util::hamming;
+use crate::util::*;
 
 fn challenge1() {
     info!("Running: challenge1");
@@ -228,13 +227,6 @@ fn challenge6() {
     assert_eq!(min_key, "Terminator X: Bring the noise".to_string());
 }
 
-fn decrypt_aes128_block(block: &[u8], key: &[u8]) -> Vec<u8> {
-    let cipher = aes::Aes128::new_from_slice(key).unwrap();
-    let mut block = *GenericArray::from_slice(block);
-    cipher.decrypt_block(&mut block);
-    block.to_vec()
-}
-
 fn challenge7() {
     info!("Running: challenge7");
     // Read data from file, remove newlines, and decode from base64.
@@ -249,7 +241,7 @@ fn challenge7() {
 
     let result: Vec<u8> = data
         .chunks(16)
-        .map(|chunk| decrypt_aes128_block(chunk, key))
+        .map(|chunk| aes128_decrypt_block(chunk, key))
         .flatten()
         .collect();
 
