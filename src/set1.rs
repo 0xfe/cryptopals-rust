@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose, Engine};
 use tracing::*;
 
+use crate::aes::*;
 use crate::util::*;
 
 fn challenge1() {
@@ -238,18 +239,10 @@ fn challenge7() {
     };
 
     let key = "YELLOW SUBMARINE".as_bytes();
+    let plaintext = String::from_utf8(aes128_ecb_decrypt(data.as_slice(), key)).unwrap();
 
-    let result: Vec<u8> = data
-        .chunks(16)
-        .map(|chunk| aes128_decrypt_block(chunk, key))
-        .flatten()
-        .collect();
-
-    let result = String::from_utf8(result).unwrap();
-
-    debug!("Decrypted:\n{}", result);
-
-    assert!(result.starts_with("I'm back and I'm ringin' the bell"))
+    debug!("Decrypted:\n{}", plaintext);
+    assert!(plaintext.starts_with("I'm back and I'm ringin' the bell"))
 }
 
 fn challenge8() {

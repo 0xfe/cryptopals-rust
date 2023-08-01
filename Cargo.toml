@@ -9,5 +9,6 @@ edition = "2021"
 aes = "0.8.3"
 base64 = "0.21.2"
 hex = "0.4.3"
+rand = "0.8.5"
 tracing = "0.1.37"
 tracing-subscriber = {version ="0.3.17", features=["env-filter"]}
