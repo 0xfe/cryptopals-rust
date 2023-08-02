@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::aes::*;
 use crate::util::*;
 use base64::{engine::general_purpose, Engine};
@@ -165,44 +163,33 @@ fn challenge12() {
 
     assert_eq!(block_size, 16);
 
-    fn create_map(prefix: &[u8], key: &[u8]) -> HashMap<Vec<u8>, u8> {
-        let mut crack_map = HashMap::new();
-        for c in 0..255 {
-            let payload = [prefix, [c].as_ref()].concat();
-            let ciphertext = oracle12(payload.as_slice(), key);
-            crack_map.insert((ciphertext[0..prefix.len() + 1]).to_vec(), c);
-        }
-        crack_map
-    }
-
-    // Start with a high multiple of 16 and subtract 1.
-    let max_len = 127;
-    let mut prefix = vec![0u8; max_len];
-    let mut learn_prefix = prefix.clone();
+    // We don't know how large the target payload is, so start with some high
+    // multiple of 16.
+    let max_len = 256;
+    let mut learn_prefix = vec![0u8; max_len - 1]; // short 1-byte for the target char
     let mut secret = vec![];
 
-    loop {
-        let crack_map = create_map(learn_prefix.as_slice(), key);
-        let ciphertext = oracle12(prefix.as_slice(), key);
+    for i in (0..max_len).rev() {
+        let target_ciphertext = oracle12(&vec![0u8; i], key);
 
-        if let Some(c) = crack_map.get(ciphertext[0..learn_prefix.len() + 1].to_vec().as_slice()) {
-            secret.push(*c);
-            debug!("Cracked: {}", String::from_utf8_lossy(secret.as_ref()));
+        let mut matched = false;
+        for c in 0..255 {
+            let payload = [learn_prefix.as_ref(), [c].as_ref()].concat();
+            let ciphertext = oracle12(payload.as_slice(), key);
 
-            // We're done here.
-            if prefix.is_empty() {
+            if ciphertext[0..learn_prefix.len() + 1] == target_ciphertext[0..learn_prefix.len() + 1]
+            {
+                matched = true;
+                secret.push(c);
+                debug!("Cracked: {}", String::from_utf8_lossy(secret.as_ref()));
+
+                learn_prefix = [learn_prefix[1..].to_vec(), [c].to_vec()].concat();
                 break;
             }
+        }
 
-            prefix = prefix[1..].to_vec();
-            learn_prefix = [learn_prefix[1..].to_vec(), [*c].to_vec()].concat();
-        } else {
-            // Too high, decrement prefix and try again.
-            if prefix.is_empty() {
-                break;
-            }
-            prefix = prefix[1..].to_vec();
-            learn_prefix = prefix.clone();
+        if !matched {
+            break;
         }
     }
 
