@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::aes::*;
 use crate::util::*;
 use base64::{engine::general_purpose, Engine};
@@ -181,9 +183,8 @@ fn challenge12() {
             {
                 matched = true;
                 secret.push(c);
-                debug!("Cracked: {}", String::from_utf8_lossy(secret.as_ref()));
-
                 learn_prefix = [learn_prefix[1..].to_vec(), [c].to_vec()].concat();
+                debug!("Cracked: {}", String::from_utf8_lossy(secret.as_ref()));
                 break;
             }
         }
@@ -196,10 +197,45 @@ fn challenge12() {
     assert!(String::from_utf8_lossy(secret.as_ref()).starts_with("Rollin'"));
 }
 
+fn challenge13() {
+    info!("Running: challenge13");
+    fn parse_cookie(input: &str) -> HashMap<String, String> {
+        let parts = input.split("&");
+        parts
+            .map(|part| {
+                let mut parts = part.split("=");
+                let key = parts.next().unwrap();
+                let value = parts.next().unwrap();
+                (key.to_string(), value.to_string())
+            })
+            .collect::<HashMap<String, String>>()
+    }
+
+    fn profile_for(email: &str) -> String {
+        let email = email.replace("&", "").replace("=", "");
+        format!("email={}&uid=10&role=user", email)
+    }
+
+    let key = "YELLOW SUBMARINE".as_bytes();
+    let iv = [0u8; 16].as_slice();
+    let ciphertext = aes128_cbc_encrypt(
+        &pkcs7_pad(profile_for("foo@bar.com").as_bytes(), 16),
+        key,
+        iv,
+    );
+
+    let plaintext = pkcs7_unpad(&aes128_cbc_decrypt(&ciphertext, key, iv));
+    debug!(
+        "plaintext: {}",
+        String::from_utf8_lossy(plaintext.as_slice())
+    );
+}
+
 pub fn run() {
     info!("Running Set 2");
     challenge9();
     challenge10();
     challenge11();
     challenge12();
+    challenge13();
 }
