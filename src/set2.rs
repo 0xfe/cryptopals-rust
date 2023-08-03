@@ -211,24 +211,51 @@ fn challenge13() {
             .collect::<HashMap<String, String>>()
     }
 
-    fn profile_for(email: &str) -> String {
+    fn profile_for(email: &str) -> Vec<u8> {
+        let key = "YELLOW SUBMARINE".as_bytes();
         let email = email.replace("&", "").replace("=", "");
-        format!("email={}&uid=10&role=user", email)
+        aes128_ecb_encrypt(
+            &pkcs7_pad(format!("email={}&uid=10&role=user", email).as_bytes(), 16),
+            key,
+        )
+        .to_vec()
     }
 
+    // Construct an "admin" ciphertext block to replace the last block
+    let admin_ciphertext = profile_for(
+        std::str::from_utf8(
+            ["AAAAAAAAAAadmin".as_bytes(), &[11u8; 11]]
+                .concat()
+                .as_slice(),
+        )
+        .unwrap(),
+    )
+    .chunks(16)
+    .nth(1)
+    .unwrap()
+    .to_vec();
+
+    // Construct a ciphertext block with the role string aligned to the beginning of a 128-bit
+    // block. This requires a 13 character username.
+    let profile_cookie = profile_for("f.o.o@bar.com")
+        .chunks(16)
+        .take(2)
+        .collect::<Vec<&[u8]>>()
+        .concat();
+
     let key = "YELLOW SUBMARINE".as_bytes();
-    let iv = [0u8; 16].as_slice();
-    let ciphertext = aes128_cbc_encrypt(
-        &pkcs7_pad(profile_for("foo@bar.com").as_bytes(), 16),
-        key,
-        iv,
+    let ciphertext = [profile_cookie.clone(), admin_ciphertext.clone()].concat();
+    let plaintext = &pkcs7_unpad(&aes128_ecb_decrypt(&ciphertext, key));
+    let plaintext = std::str::from_utf8(plaintext).unwrap();
+
+    debug!(
+        "profile_cookie.len {} admin_ciphertext.len {} ciphertext.len {}",
+        profile_cookie.len(),
+        admin_ciphertext.len(),
+        ciphertext.len()
     );
 
-    let plaintext = pkcs7_unpad(&aes128_cbc_decrypt(&ciphertext, key, iv));
-    debug!(
-        "plaintext: {}",
-        String::from_utf8_lossy(plaintext.as_slice())
-    );
+    debug!("cookie: {:?}", parse_cookie(plaintext));
 }
 
 pub fn run() {
@@ -236,6 +263,7 @@ pub fn run() {
     challenge9();
     challenge10();
     challenge11();
-    challenge12();
+    // Commented because it takes a long time to run.
+    // challenge12();
     challenge13();
 }
