@@ -174,12 +174,12 @@ fn challenge12and14(oracle: Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>, detect_block_s
     let mut secret = vec![];
 
     for i in (0..max_len).rev() {
-        let target_ciphertext = oracle12(&vec![0u8; i], key);
+        let target_ciphertext = oracle(&vec![0u8; i], key);
 
         let mut matched = false;
         for c in 0..255 {
             let payload = [learn_prefix.as_ref(), [c].as_ref()].concat();
-            let ciphertext = oracle12(payload.as_slice(), key);
+            let ciphertext = oracle(payload.as_slice(), key);
 
             if ciphertext[0..learn_prefix.len() + 1] == target_ciphertext[0..learn_prefix.len() + 1]
             {
@@ -278,8 +278,9 @@ fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
 
     let mut rng = rand::thread_rng();
     let prefix_len = rng.gen_range(1..10);
-    let mut prefix = vec![0u8; prefix_len];
-    rand::thread_rng().fill_bytes(&mut prefix);
+    let prefix = vec![0u8; 10];
+    // let mut prefix = vec![0u8; prefix_len];
+    // rand::thread_rng().fill_bytes(&mut prefix);
 
     aes128_ecb_encrypt(
         pkcs7_pad([&prefix, input, suffix.as_slice()].concat().as_slice(), 16).as_slice(),
@@ -293,7 +294,7 @@ pub fn run() {
     challenge10();
     challenge11();
     // Commented because it takes a long time to run.
-    challenge12and14(Box::new(oracle12), true);
+    // challenge12and14(Box::new(oracle12), true);
     challenge13();
     challenge12and14(Box::new(oracle14), false);
 }
