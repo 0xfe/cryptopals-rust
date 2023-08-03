@@ -132,38 +132,40 @@ fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     )
 }
 
-fn challenge12() {
-    info!("Running: challenge12");
+fn challenge12and14(oracle: Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>, detect_block_size: bool) {
+    info!("Running: challenge12and14");
     let mut rng = rand::thread_rng();
     let mut key = [0u8; 16];
     rng.fill_bytes(&mut key);
 
     let key = key.as_ref();
 
-    // Detect block size.
-    let mut block_size = 0;
-    for i in 1..64 {
-        debug!("Trying block size: {}", i);
-        let first = vec![0u8; i];
+    if detect_block_size {
+        // Detect block size.
+        let mut block_size = 0;
+        for i in 1..64 {
+            debug!("Trying block size: {}", i);
+            let first = vec![0u8; i];
 
-        let ciphertext = oracle12(
-            [first.as_slice(), first.as_slice()].concat().as_slice(),
-            key,
-        );
+            let ciphertext = oracle(
+                [first.as_slice(), first.as_slice()].concat().as_slice(),
+                key,
+            );
 
-        if ciphertext
-            .chunks(i)
-            .nth(0)
-            .unwrap()
-            .eq(ciphertext.chunks(i).nth(1).unwrap())
-        {
-            debug!("Found block size: {}", i);
-            block_size = i;
-            break;
+            if ciphertext
+                .chunks(i)
+                .nth(0)
+                .unwrap()
+                .eq(ciphertext.chunks(i).nth(1).unwrap())
+            {
+                debug!("Found block size: {}", i);
+                block_size = i;
+                break;
+            }
         }
-    }
 
-    assert_eq!(block_size, 16);
+        assert_eq!(block_size, 16);
+    }
 
     // We don't know how large the target payload is, so start with some high
     // multiple of 16.
@@ -258,12 +260,40 @@ fn challenge13() {
     debug!("cookie: {:?}", parse_cookie(plaintext));
 }
 
+/// This is the same as oracle12, but with a random prefix prepended to the
+/// input.
+fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
+    let suffix = {
+        let suffix = r"
+    Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+    aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+    dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+    YnkK
+    "
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join("");
+        general_purpose::STANDARD.decode(&suffix).unwrap()
+    };
+
+    let mut rng = rand::thread_rng();
+    let prefix_len = rng.gen_range(1..10);
+    let mut prefix = vec![0u8; prefix_len];
+    rand::thread_rng().fill_bytes(&mut prefix);
+
+    aes128_ecb_encrypt(
+        pkcs7_pad([&prefix, input, suffix.as_slice()].concat().as_slice(), 16).as_slice(),
+        key,
+    )
+}
+
 pub fn run() {
     info!("Running Set 2");
     challenge9();
     challenge10();
     challenge11();
     // Commented because it takes a long time to run.
-    // challenge12();
+    challenge12and14(Box::new(oracle12), true);
     challenge13();
+    challenge12and14(Box::new(oracle14), false);
 }
