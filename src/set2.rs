@@ -132,7 +132,9 @@ fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     )
 }
 
-fn challenge12and14(oracle: Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>, detect_block_size: bool) {
+type OracleFn = Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>;
+
+fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
     info!("Running: challenge12and14");
     let mut rng = rand::thread_rng();
     let mut key = [0u8; 16];
@@ -167,32 +169,49 @@ fn challenge12and14(oracle: Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>, detect_block_s
         assert_eq!(block_size, 16);
     }
 
+    let mut last_ciphertext = oracle(&[], key);
+    let mut offset = 0;
+
+    // Detect offset. For challeng 12, this will be 0. For challenge 14, this
+    // will be some random number depending on the random prefix.
+    for i in 1..16 {
+        let payload = vec![0u8; i];
+        let ciphertext = oracle(payload.as_slice(), key);
+
+        if last_ciphertext.chunks(16).nth(0).unwrap() == ciphertext.chunks(16).nth(0).unwrap() {
+            offset = i - 1;
+            debug!("Found offset: {}", offset);
+            break;
+        }
+        last_ciphertext = ciphertext;
+    }
+
     // We don't know how large the target payload is, so start with some high
     // multiple of 16.
-    let max_len = 256;
-    let mut learn_prefix = vec![0u8; max_len - 1]; // short 1-byte for the target char
+    let max_len = 128 + offset;
+    let mut learn_prefix = vec![65; max_len - 1]; // short 1-byte for the target char
     let mut secret = vec![];
 
     for i in (0..max_len).rev() {
-        let target_ciphertext = oracle(&vec![0u8; i], key);
+        debug!("Cracking byte: {}", i);
+        let target_ciphertext = oracle(&vec![65; i], key);
 
         let mut matched = false;
         for c in 0..255 {
             let payload = [learn_prefix.as_ref(), [c].as_ref()].concat();
             let ciphertext = oracle(payload.as_slice(), key);
 
-            if ciphertext[0..learn_prefix.len() + 1] == target_ciphertext[0..learn_prefix.len() + 1]
-            {
+            if ciphertext[16..max_len] == target_ciphertext[16..max_len] {
                 matched = true;
                 secret.push(c);
                 learn_prefix = [learn_prefix[1..].to_vec(), [c].to_vec()].concat();
-                debug!("Cracked: {}", String::from_utf8_lossy(secret.as_ref()));
+                debug!("Cracked: [{}]", String::from_utf8_lossy(secret.as_ref()));
                 break;
             }
         }
 
         if !matched {
-            break;
+            // break;
         }
     }
 
@@ -276,11 +295,9 @@ fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
         general_purpose::STANDARD.decode(&suffix).unwrap()
     };
 
-    let mut rng = rand::thread_rng();
-    let prefix_len = rng.gen_range(1..10);
-    let prefix = vec![0u8; 10];
-    // let mut prefix = vec![0u8; prefix_len];
-    // rand::thread_rng().fill_bytes(&mut prefix);
+    // Prepend a random prefix to the input. Let's just use 10 bytes here -- this
+    // is unknown to the attacker.
+    let prefix = vec![67u8; 10];
 
     aes128_ecb_encrypt(
         pkcs7_pad([&prefix, input, suffix.as_slice()].concat().as_slice(), 16).as_slice(),
@@ -296,5 +313,6 @@ pub fn run() {
     // Commented because it takes a long time to run.
     // challenge12and14(Box::new(oracle12), true);
     challenge13();
-    challenge12and14(Box::new(oracle14), false);
+    // Commented because it takes a long time to run.
+    // challenge12and14(Box::new(oracle14), false);
 }
