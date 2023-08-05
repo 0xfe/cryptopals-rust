@@ -317,6 +317,73 @@ fn challenge15() {
     assert!(pkcs7_unpad(string.as_bytes()).is_err());
 }
 
+fn challenge16() {
+    info!("Running: challenge16");
+    let mut rng = rand::thread_rng();
+    let mut key = [0u8; 16];
+    let mut iv = [0u8; 16];
+    rng.fill_bytes(&mut key);
+    rng.fill_bytes(&mut iv);
+
+    let f1 = |input: &str| -> Vec<u8> {
+        let pre = "comment1=cooking%20MCs;userdata=";
+        let post = ";comment2=%20like%20a%20pound%20of%20bacon";
+        let input = input.replace(";", "").replace("=", "");
+        aes128_cbc_encrypt(
+            pkcs7_pad(format!("{}{}{}", pre, input, post).as_bytes(), 16).as_slice(),
+            &key,
+            &iv,
+        )
+    };
+
+    let f2 = |input: &[u8]| -> bool {
+        let pt = pkcs7_unpad(&aes128_cbc_decrypt(input, &key, &iv)).unwrap();
+        let pt = String::from_utf8_lossy(&pt);
+
+        for part in pt.split(";") {
+            let mut kv = part.split("=");
+            if kv.nth(0).unwrap() == "admin" {
+                return true;
+            }
+        }
+        false
+    };
+
+    // We want to construct a ciphertext block that decrypts to a block that
+    // contains ";admin=true;". We can do this by XORing the target string with
+    // the plaintext block that contains the user input. This will result in a
+    // ciphertext block that decrypts to the target string.
+    let p1 = "AAAAAAAAAAAAAAAA".as_bytes();
+    let p2 = ";admin=true;ab=b".as_bytes();
+
+    let target = p1
+        .iter()
+        .zip(p2.iter())
+        .map(|(a, b)| a ^ b)
+        .collect::<Vec<u8>>();
+
+    let ct = f1("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+    let target = target
+        .iter()
+        .zip(ct.chunks(16).nth(2).unwrap().iter())
+        .map(|(a, b)| a ^ b)
+        .collect::<Vec<u8>>();
+
+    let ct = [
+        ct.chunks(16).nth(0).unwrap(),
+        ct.chunks(16).nth(1).unwrap(),
+        &target,
+        ct.chunks(16).nth(3).unwrap(),
+        ct.chunks(16).nth(4).unwrap(),
+        ct.chunks(16).nth(5).unwrap(),
+        ct.chunks(16).nth(6).unwrap(),
+    ]
+    .concat();
+
+    assert!(f2(&ct));
+}
+
 pub fn run(skip_slow_challenges: bool) {
     info!("Running Set 2");
     challenge9();
@@ -329,5 +396,6 @@ pub fn run(skip_slow_challenges: bool) {
     if !skip_slow_challenges {
         challenge12and14(Box::new(oracle14), false);
     }
-    challenge15()
+    challenge15();
+    challenge16();
 }
