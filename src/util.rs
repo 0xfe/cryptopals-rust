@@ -23,15 +23,6 @@ pub fn pkcs7_pad(input: &[u8], block_size: usize) -> Vec<u8> {
 }
 
 /// Unpad a byte slice using PKCS#7 padding.
-#[allow(dead_code)]
-pub fn pkcs7_unpad_unchecked(input: &[u8]) -> Vec<u8> {
-    let pad_size = input[input.len() - 1] as usize;
-    let mut output = input.to_vec();
-    output.truncate(input.len() - pad_size);
-    output
-}
-
-/// Unpad a byte slice using PKCS#7 padding.
 pub fn pkcs7_unpad(input: &[u8]) -> anyhow::Result<Vec<u8>> {
     let pad_size = input[input.len() - 1] as usize;
     if input.len() < pad_size {
@@ -75,7 +66,7 @@ mod test {
         for data in test_data {
             let data = data.as_bytes();
             assert_eq!(pkcs7_pad(data, 16).len() % 16, 0);
-            assert_eq!(pkcs7_unpad_unchecked(pkcs7_pad(data, 16).as_slice()), data);
+            assert_eq!(pkcs7_unpad(pkcs7_pad(data, 16).as_slice()).unwrap(), data);
         }
     }
 

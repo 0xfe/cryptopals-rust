@@ -112,7 +112,6 @@ fn challenge11() {
     }
 }
 
-#[allow(dead_code)]
 fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     let suffix = {
         let suffix = r"
@@ -133,10 +132,8 @@ fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     )
 }
 
-#[allow(dead_code)]
 type OracleFn = Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>;
 
-#[allow(dead_code)]
 fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
     info!("Running: challenge12and14");
     let mut rng = rand::thread_rng();
@@ -284,7 +281,6 @@ fn challenge13() {
 
 /// This is the same as oracle12, but with a random prefix prepended to the
 /// input.
-#[allow(dead_code)]
 fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
     let suffix = {
         let suffix = r"
@@ -309,7 +305,6 @@ fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
     )
 }
 
-#[allow(dead_code)]
 fn challenge15() {
     info!("Running: challenge15");
     let string = "ICE ICE BABY\x04\x04\x04\x04";
@@ -322,14 +317,17 @@ fn challenge15() {
     assert!(pkcs7_unpad(string.as_bytes()).is_err());
 }
 
-pub fn run() {
+pub fn run(skip_slow_challenges: bool) {
     info!("Running Set 2");
     challenge9();
     challenge10();
     challenge11();
-    // Commented because it takes a long time to run.
-    // challenge12and14(Box::new(oracle12), true);
+    if !skip_slow_challenges {
+        challenge12and14(Box::new(oracle12), false);
+    }
     challenge13();
-    // Commented because it takes a long time to run.
-    // challenge12and14(Box::new(oracle14), false);
+    if !skip_slow_challenges {
+        challenge12and14(Box::new(oracle14), false);
+    }
+    challenge15()
 }

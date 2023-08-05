@@ -1,3 +1,5 @@
+use std::env;
+
 mod aes;
 mod set1;
 mod set2;
@@ -12,9 +14,17 @@ fn init_logger() {
 
 fn main() {
     init_logger();
+    let mut skip_slow_challenges = false;
+
+    env::args().skip(1).for_each(|arg| {
+        tracing::info!("Running {}", arg);
+        if arg == "--fast" {
+            skip_slow_challenges = true;
+        }
+    });
 
     set1::run();
-    set2::run();
+    set2::run(skip_slow_challenges);
 
     println!("All done!")
 }
