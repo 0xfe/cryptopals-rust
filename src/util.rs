@@ -1,3 +1,5 @@
+use anyhow::bail;
+
 /// Returns the hamming distance between two byte slices.
 pub fn hamming(a: &[u8], b: &[u8]) -> u32 {
     assert_eq!(a.len(), b.len());
@@ -21,11 +23,28 @@ pub fn pkcs7_pad(input: &[u8], block_size: usize) -> Vec<u8> {
 }
 
 /// Unpad a byte slice using PKCS#7 padding.
-pub fn pkcs7_unpad(input: &[u8]) -> Vec<u8> {
+#[allow(dead_code)]
+pub fn pkcs7_unpad_unchecked(input: &[u8]) -> Vec<u8> {
     let pad_size = input[input.len() - 1] as usize;
     let mut output = input.to_vec();
     output.truncate(input.len() - pad_size);
     output
+}
+
+/// Unpad a byte slice using PKCS#7 padding.
+pub fn pkcs7_unpad(input: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let pad_size = input[input.len() - 1] as usize;
+    if input.len() < pad_size {
+        bail!("Invalid padding: input < pad_size");
+    }
+
+    if !input.ends_with(vec![pad_size as u8; pad_size].as_ref()) {
+        bail!("Invalid padding: input padded with invalid bytes");
+    }
+
+    let mut output = input.to_vec();
+    output.truncate(input.len() - pad_size);
+    Ok(output)
 }
 
 /// XOR two byte slices together.
@@ -56,7 +75,19 @@ mod test {
         for data in test_data {
             let data = data.as_bytes();
             assert_eq!(pkcs7_pad(data, 16).len() % 16, 0);
-            assert_eq!(pkcs7_unpad(pkcs7_pad(data, 16).as_slice()), data);
+            assert_eq!(pkcs7_unpad_unchecked(pkcs7_pad(data, 16).as_slice()), data);
         }
+    }
+
+    #[test]
+    fn test_pkcs7_unpad_errors() {
+        let string = "ICE ICE BABY\x04\x04\x04\x04";
+        assert!(pkcs7_unpad(string.as_bytes()).is_ok());
+
+        let string = "ICE ICE BABY\x05\x05\x05\x05";
+        assert!(pkcs7_unpad(string.as_bytes()).is_err());
+
+        let string = "ICE ICE BABY\x01\x02\x03\x04";
+        assert!(pkcs7_unpad(string.as_bytes()).is_err());
     }
 }

@@ -13,7 +13,7 @@ fn challenge9() {
     let output = pkcs7_pad(input, 20);
 
     assert_eq!(output, "YELLOW SUBMARINE\x04\x04\x04\x04".as_bytes());
-    assert_eq!(pkcs7_unpad(output.as_slice()), input);
+    assert_eq!(pkcs7_unpad(output.as_slice()).unwrap(), input);
 }
 
 fn challenge10() {
@@ -112,6 +112,7 @@ fn challenge11() {
     }
 }
 
+#[allow(dead_code)]
 fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     let suffix = {
         let suffix = r"
@@ -132,8 +133,10 @@ fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
     )
 }
 
+#[allow(dead_code)]
 type OracleFn = Box<dyn Fn(&[u8], &[u8]) -> Vec<u8>>;
 
+#[allow(dead_code)]
 fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
     info!("Running: challenge12and14");
     let mut rng = rand::thread_rng();
@@ -266,7 +269,7 @@ fn challenge13() {
 
     let key = "YELLOW SUBMARINE".as_bytes();
     let ciphertext = [profile_cookie.clone(), admin_ciphertext.clone()].concat();
-    let plaintext = &pkcs7_unpad(&aes128_ecb_decrypt(&ciphertext, key));
+    let plaintext = &pkcs7_unpad(&aes128_ecb_decrypt(&ciphertext, key)).unwrap();
     let plaintext = std::str::from_utf8(plaintext).unwrap();
 
     debug!(
@@ -281,6 +284,7 @@ fn challenge13() {
 
 /// This is the same as oracle12, but with a random prefix prepended to the
 /// input.
+#[allow(dead_code)]
 fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
     let suffix = {
         let suffix = r"
@@ -303,6 +307,19 @@ fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
         pkcs7_pad([&prefix, input, suffix.as_slice()].concat().as_slice(), 16).as_slice(),
         key,
     )
+}
+
+#[allow(dead_code)]
+fn challenge15() {
+    info!("Running: challenge15");
+    let string = "ICE ICE BABY\x04\x04\x04\x04";
+    assert!(pkcs7_unpad(string.as_bytes()).is_ok());
+
+    let string = "ICE ICE BABY\x05\x05\x05\x05";
+    assert!(pkcs7_unpad(string.as_bytes()).is_err());
+
+    let string = "ICE ICE BABY\x01\x02\x03\x04";
+    assert!(pkcs7_unpad(string.as_bytes()).is_err());
 }
 
 pub fn run() {

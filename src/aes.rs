@@ -88,7 +88,7 @@ mod test {
             aes128_cbc_encrypt(pkcs7_pad(plaintext, 16).as_slice(), key, iv.as_slice());
         let plaintext2 = aes128_cbc_decrypt(ciphertext.as_slice(), key, iv.as_slice());
 
-        assert_eq!(plaintext, pkcs7_unpad(plaintext2.as_slice()));
+        assert_eq!(plaintext, pkcs7_unpad(plaintext2.as_slice()).unwrap());
     }
 
     #[test]
@@ -102,6 +102,6 @@ mod test {
         let ciphertext = aes128_ecb_encrypt(pkcs7_pad(plaintext, 16).as_slice(), key);
         let plaintext2 = aes128_ecb_decrypt(ciphertext.as_slice(), key);
 
-        assert_eq!(plaintext, pkcs7_unpad(plaintext2.as_slice()));
+        assert_eq!(plaintext, pkcs7_unpad(plaintext2.as_slice()).unwrap());
     }
 }
