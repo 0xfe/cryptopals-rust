@@ -3,6 +3,7 @@ use std::env;
 mod aes;
 mod set1;
 mod set2;
+mod set7;
 mod util;
 
 fn init_logger() {
@@ -25,6 +26,7 @@ fn main() {
 
     set1::run();
     set2::run(skip_slow_challenges);
+    set7::run();
 
     println!("All done!")
 }

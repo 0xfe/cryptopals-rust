@@ -71,6 +71,14 @@ pub fn aes128_ecb_decrypt(input: &[u8], key: &[u8]) -> Vec<u8> {
         .collect()
 }
 
+pub fn cbc_mac(message: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {
+    aes128_cbc_encrypt(message, key, iv)
+        .chunks(16)
+        .last()
+        .unwrap()
+        .to_vec()
+}
+
 mod test {
     #[allow(unused_imports)]
     use super::*;
