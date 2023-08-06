@@ -1,9 +1,11 @@
+use crate::aes;
 use crate::aes::*;
 use crate::util::*;
 use rand::RngCore;
 use tracing::*;
 
-fn challenge1() {
+fn challenge49() {
+    info!("Challenge 49");
     let mut rng = rand::thread_rng();
     let mut key = [0u8; 16];
     rng.fill_bytes(&mut key);
@@ -70,7 +72,25 @@ fn challenge1() {
     assert!(verify_message(signed_message2.as_str()));
 }
 
+fn challenge50() {
+    info!("Challenge 50");
+
+    let pt = "alert('MZA who was that?');\n".as_bytes();
+    let key = "YELLOW SUBMARINE".as_bytes();
+    let iv = &[0u8; 16];
+
+    let target_pt = "alert('Ayo, the Wu is back!');\n".as_bytes();
+    let target_mac = hex::decode("296b8d7cb78a243dda4d0a61d33bbdd1").unwrap();
+
+    assert_eq!(cbc_mac(&pkcs7_pad(pt, 16), key, iv), target_mac);
+
+    let target_last_ct = aes128_cbc_decrypt(&pkcs7_pad(pt, 16).chunks(16).last().unwrap(), key, iv);
+
+    dbg!(target_pt.len(), key.len());
+}
+
 pub fn run() {
     info!("Running set 7");
-    challenge1();
+    challenge49();
+    challenge50();
 }

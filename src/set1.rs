@@ -8,7 +8,7 @@ fn challenge1() {
     info!("Running: challenge1");
     let input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
     let decoded = hex::decode(input).unwrap();
-    let encoded = general_purpose::STANDARD.encode(&decoded);
+    let encoded = general_purpose::STANDARD.encode(decoded);
     assert_eq!(
         encoded,
         "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
@@ -33,7 +33,7 @@ fn challenge2() {
 
 fn get_expected_frequency(c: u8) -> f32 {
     let c = c.to_ascii_uppercase();
-    if c >= 'A' as u8 && c <= 'Z' as u8 {
+    if c.is_ascii_uppercase() {
         const FREQ_TABLE: [f32; 26] = [
             0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, // A-F
             0.02015, 0.06094, 0.06966, 0.00153, 0.00772, 0.04025, // G-L
@@ -42,11 +42,11 @@ fn get_expected_frequency(c: u8) -> f32 {
             0.01974, 0.00074, // Y-Z
         ];
 
-        let index = c - 'A' as u8;
+        let index = c - b'A';
         return FREQ_TABLE[index as usize];
     }
 
-    return match c as char {
+    match c as char {
         ' ' => 0.15,
         '\'' => 0.01,
         ',' => 0.01,
@@ -54,7 +54,7 @@ fn get_expected_frequency(c: u8) -> f32 {
         '!' => 0.01,
         '?' => 0.01,
         _ => 0.0001,
-    };
+    }
 }
 
 /// Score the text based on how closely it matches the expected frequency of letters in English.
@@ -124,7 +124,7 @@ fn challenge4() {
     info!("Running: challenge4");
 
     let data = std::fs::read_to_string("data/4.txt").unwrap();
-    let lines = data.split("\n");
+    let lines = data.split('\n');
 
     let mut min = std::f32::MAX;
     let mut min_result = String::new();
@@ -168,7 +168,7 @@ fn challenge6() {
     // Read data from file, remove newlines, and decode from base64
     let data = std::fs::read_to_string("data/6.txt")
         .unwrap()
-        .split("\n")
+        .split('\n')
         .collect::<Vec<_>>()
         .join("");
 
@@ -179,7 +179,7 @@ fn challenge6() {
     // For each keysize, take the first four chunks of that size and compute the average
     // hamming distance between them.
     for keysize in 2..40 {
-        let first = data.chunks(keysize).nth(0).unwrap();
+        let first = data.chunks(keysize).next().unwrap();
         let second = data.chunks(keysize).nth(1).unwrap();
         let third = data.chunks(keysize).nth(2).unwrap();
         let fourth = data.chunks(keysize).nth(3).unwrap();
@@ -234,7 +234,7 @@ fn challenge7() {
     let data = {
         let data = std::fs::read_to_string("data/7.txt").unwrap();
         general_purpose::STANDARD
-            .decode(&data.replace("\n", ""))
+            .decode(data.replace('\n', ""))
             .unwrap()
     };
 
