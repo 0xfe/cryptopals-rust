@@ -1,4 +1,3 @@
-use crate::aes;
 use crate::aes::*;
 use crate::util::*;
 use rand::RngCore;
@@ -16,7 +15,7 @@ fn challenge49() {
             "{}{}{}",
             hex::encode(&message),
             hex::encode(iv),
-            hex::encode(cbc_mac(&pkcs7_pad(message.as_bytes(), 16), &key, &iv))
+            hex::encode(cbc_mac(&pkcs7_pad(message.as_bytes(), 16), &key, iv))
         )
     };
 
@@ -30,7 +29,7 @@ fn challenge49() {
             "message: {:?} mac: {} expected_mac: {}",
             String::from_utf8_lossy(&message),
             hex::encode(&mac),
-            hex::encode(&cbc_mac(&message, &key, &iv))
+            hex::encode(cbc_mac(&message, &key, &iv))
         );
         mac == cbc_mac(&message, &key, &iv)
     };
@@ -64,7 +63,7 @@ fn challenge49() {
     let signed_message2 = format!(
         "{}{}{}",
         hex::encode("from=666666&to=123456&amount=1000000"),
-        hex::encode(&iv),
+        hex::encode(iv),
         hex::encode(mac1)
     );
 

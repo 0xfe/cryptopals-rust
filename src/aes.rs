@@ -57,8 +57,7 @@ pub fn aes128_ecb_encrypt(input: &[u8], key: &[u8]) -> Vec<u8> {
     assert_eq!(input.len() % 16, 0);
     input
         .chunks(16)
-        .map(|chunk| aes128_encrypt_block(chunk, key))
-        .flatten()
+        .flat_map(|chunk| aes128_encrypt_block(chunk, key))
         .collect()
 }
 
@@ -66,8 +65,7 @@ pub fn aes128_ecb_decrypt(input: &[u8], key: &[u8]) -> Vec<u8> {
     assert_eq!(input.len() % 16, 0);
     input
         .chunks(16)
-        .map(|chunk| aes128_decrypt_block(chunk, key))
-        .flatten()
+        .flat_map(|chunk| aes128_decrypt_block(chunk, key))
         .collect()
 }
 

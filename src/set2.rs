@@ -20,9 +20,9 @@ fn challenge10() {
     info!("Running: challenge10");
     let data = std::fs::read_to_string("data/10.txt")
         .unwrap()
-        .replace("\n", "");
+        .replace('\n', "");
 
-    let data = general_purpose::STANDARD.decode(&data).unwrap();
+    let data = general_purpose::STANDARD.decode(data).unwrap();
     let key = "YELLOW SUBMARINE".as_bytes();
 
     let plaintext = aes128_cbc_decrypt(data.as_slice(), key, &[0; 16]);
@@ -123,7 +123,7 @@ fn oracle12(input: &[u8], key: &[u8]) -> Vec<u8> {
         .split_whitespace()
         .collect::<Vec<&str>>()
         .join("");
-        general_purpose::STANDARD.decode(&suffix).unwrap()
+        general_purpose::STANDARD.decode(suffix).unwrap()
     };
 
     aes128_ecb_encrypt(
@@ -156,7 +156,7 @@ fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
 
             if ciphertext
                 .chunks(i)
-                .nth(0)
+                .next()
                 .unwrap()
                 .eq(ciphertext.chunks(i).nth(1).unwrap())
             {
@@ -178,7 +178,7 @@ fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
         let payload = vec![0u8; i];
         let ciphertext = oracle(payload.as_slice(), key);
 
-        if last_ciphertext.chunks(16).nth(0).unwrap() == ciphertext.chunks(16).nth(0).unwrap() {
+        if last_ciphertext.chunks(16).next().unwrap() == ciphertext.chunks(16).next().unwrap() {
             offset = i - 1;
             debug!("Found offset: {}", offset);
             break;
@@ -221,10 +221,10 @@ fn challenge12and14(oracle: OracleFn, detect_block_size: bool) {
 fn challenge13() {
     info!("Running: challenge13");
     fn parse_cookie(input: &str) -> HashMap<String, String> {
-        let parts = input.split("&");
+        let parts = input.split('&');
         parts
             .map(|part| {
-                let mut parts = part.split("=");
+                let mut parts = part.split('=');
                 let key = parts.next().unwrap();
                 let value = parts.next().unwrap();
                 (key.to_string(), value.to_string())
@@ -234,7 +234,7 @@ fn challenge13() {
 
     fn profile_for(email: &str) -> Vec<u8> {
         let key = "YELLOW SUBMARINE".as_bytes();
-        let email = email.replace("&", "").replace("=", "");
+        let email = email.replace(['&', '='], "");
         aes128_ecb_encrypt(
             &pkcs7_pad(format!("email={}&uid=10&role=user", email).as_bytes(), 16),
             key,
@@ -292,7 +292,7 @@ fn oracle14(input: &[u8], key: &[u8]) -> Vec<u8> {
         .split_whitespace()
         .collect::<Vec<&str>>()
         .join("");
-        general_purpose::STANDARD.decode(&suffix).unwrap()
+        general_purpose::STANDARD.decode(suffix).unwrap()
     };
 
     // Prepend a random prefix to the input. Let's just use 10 bytes here -- this
@@ -328,7 +328,7 @@ fn challenge16() {
     let f1 = |input: &str| -> Vec<u8> {
         let pre = "comment1=cooking%20MCs;userdata=";
         let post = ";comment2=%20like%20a%20pound%20of%20bacon";
-        let input = input.replace(";", "").replace("=", "");
+        let input = input.replace([';', '='], "");
         aes128_cbc_encrypt(
             pkcs7_pad(format!("{}{}{}", pre, input, post).as_bytes(), 16).as_slice(),
             &key,
@@ -340,9 +340,9 @@ fn challenge16() {
         let pt = pkcs7_unpad(&aes128_cbc_decrypt(input, &key, &iv)).unwrap();
         let pt = String::from_utf8_lossy(&pt);
 
-        for part in pt.split(";") {
-            let mut kv = part.split("=");
-            if kv.nth(0).unwrap() == "admin" {
+        for part in pt.split(';') {
+            let mut kv = part.split('=');
+            if kv.next().unwrap() == "admin" {
                 return true;
             }
         }
@@ -371,7 +371,7 @@ fn challenge16() {
         .collect::<Vec<u8>>();
 
     let ct = [
-        ct.chunks(16).nth(0).unwrap(),
+        ct.chunks(16).next().unwrap(),
         ct.chunks(16).nth(1).unwrap(),
         &target,
         ct.chunks(16).nth(3).unwrap(),
